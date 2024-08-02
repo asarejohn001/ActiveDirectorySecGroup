@@ -2,17 +2,17 @@
 Author: John Asare
 Date: 7/30/24
 
-Des: Add members to security group
+Description: Use below code to manage security group on active direocty
 #>
 
 # Import the Active Directory module
 Import-Module ActiveDirectory
 
 # Define the group name
-$groupName = "Lowcountry Continuity MGR_GR"
+$groupName = "Enter the group name"
 
 # Define the path to the CSV file
-$members = ".\LowcountryContinuityMGRmembers.csv"
+$members = "enter path to the csv file"
 
 #
 $remoteComputer = "RemoteADComputerName" # Replace with the actual remote machine name or IP
