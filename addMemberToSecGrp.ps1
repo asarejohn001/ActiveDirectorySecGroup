@@ -14,13 +14,15 @@ $groupName = "Enter the group name"
 # Define the path to the CSV file
 $members = "enter path to the csv file"
 
-#
-$remoteComputer = "RemoteADComputerName" # Replace with the actual remote machine name or IP
+# Define the remote computer and credentials
+$remoteComputer = "RemoteADComputerName"
 $credential = Get-Credential
 
-# Initiate a connect to the DC
-Invoke-Command -ComputerName $remoteComputer -Credential $credential -ScriptBlock $scriptBlock -ArgumentList "ClearPoint Test", $remoteCsvPath
+# Create a new PSSession
+$session = New-PSSession -ComputerName $remoteComputer -Credential $credential
 
+# Invoke the script block on the remote machine
+Invoke-Command -Session $session -ScriptBlock $scriptBlock -ArgumentList "ClearPoint Test", $remoteCsvPath
 
 # Get emails of the CSV file, use the email to retrieve the distinName from AD, and then add member to the sec group
 Import-Csv -Path $members | ForEach-Object {
@@ -50,4 +52,6 @@ Import-Csv -Path $membersToRemove | ForEach-Object {
     }
 }
 
+# Disconnect the session
+Remove-PSSession -Session $session
 
