@@ -22,7 +22,7 @@ $credential = Get-Credential
 $session = New-PSSession -ComputerName $remoteComputer -Credential $credential
 
 # Invoke the script block on the remote machine
-Invoke-Command -Session $session -ScriptBlock $scriptBlock -ArgumentList "ClearPoint Test", $remoteCsvPath
+Invoke-Command -Session $session
 
 # Get emails of the CSV file, use the email to retrieve the distinName from AD, and then add member to the sec group
 Import-Csv -Path $members | ForEach-Object {
