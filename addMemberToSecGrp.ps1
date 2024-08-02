@@ -1,0 +1,53 @@
+<#
+Author: John Asare
+Date: 7/30/24
+
+Des: Add members to security group
+#>
+
+# Import the Active Directory module
+Import-Module ActiveDirectory
+
+# Define the group name
+$groupName = "Lowcountry Continuity MGR_GR"
+
+# Define the path to the CSV file
+$members = ".\LowcountryContinuityMGRmembers.csv"
+
+#
+$remoteComputer = "RemoteADComputerName" # Replace with the actual remote machine name or IP
+$credential = Get-Credential
+
+# Initiate a connect to the DC
+Invoke-Command -ComputerName $remoteComputer -Credential $credential -ScriptBlock $scriptBlock -ArgumentList "ClearPoint Test", $remoteCsvPath
+
+
+# Get emails of the CSV file, use the email to retrieve the distinName from AD, and then add member to the sec group
+Import-Csv -Path $members | ForEach-Object {
+    $email = $_.members
+    try {
+        $user = Get-ADUser -Filter "EmailAddress -eq '$email'"
+        if ($user) {
+            Add-ADGroupMember -Identity $groupName -Members $user.DistinguishedName -ErrorAction Stop
+            Write-Host "Successfully added $email to $groupName"
+        } else {
+            Write-Host "User with email $email not found in Active Directory."
+        }
+    } catch {
+        Write-Host "Failed to add $email to $groupName. Error: $_"
+    }
+}
+
+
+# Read the SamAccount from the CSV file and remove each member from the group
+Import-Csv -Path $membersToRemove | ForEach-Object {
+    $samAccountName = $_.samAccountName
+    try {
+        Remove-ADGroupMember -Identity $groupName -Members $samAccountName -Confirm:$false -ErrorAction Stop
+        Write-Host "Successfully removed $samAccountName from $groupName"
+    } catch {
+        Write-Host "Failed to remove $samAccountName from $groupName. Error: $_"
+    }
+}
+
+
