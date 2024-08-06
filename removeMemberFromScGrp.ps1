@@ -5,6 +5,12 @@ Date: 7/30/24
 Description: Use below code to manage security group on active direocty
 #>
 
+# Install Active Directory module, if not already installed
+Install-Module ActiveDirectory # not needed if machine have RSAT installed
+
+# Import the Active Directory module
+Import-Module ActiveDirectory
+
 # Fucntion to log output
 function Get-Log {
     param (
@@ -22,12 +28,6 @@ function Get-Log {
 # Define the log file path
 $logFilePath = "enter log file path"
 
-# Install Active Directory module, if not already installed
-Install-Module ActiveDirectory # not needed if machine have RSAT installed
-
-# Import the Active Directory module
-Import-Module ActiveDirectory
-
 # Define the group name
 $groupName = "enter group name"
 
@@ -44,18 +44,25 @@ $session = New-PSSession -ComputerName $remoteComputer -Credential $credential #
 # Invoke the script block on the remote machine
 Invoke-Command -Session $session # not needed if running script from a computer on the domain
 
-# Read the SamAccount from the CSV file and remove each member from the group
+# Get emails from csv and use to retrive SamAccountName to remove from the security group
+Write-Host "Script In-progress..."
 Import-Csv -Path $members | ForEach-Object {
-    $samAccountName = $_.SamAccountName
+    $email = $_.members
     try {
-        Remove-ADGroupMember -Identity $groupName -Members $samAccountName -Confirm:$false -ErrorAction Stop
-        Get-Log -LogFilePath $logFilePath -LogMessage "Successfully removed $samAccountName from $groupName"
-        Write-Host "Successfully removed users, check log file"
+        $user = Get-ADUser -Filter "EmailAddress -eq '$email'"
+        if ($user) {
+            Remove-ADGroupMember -Identity $groupName -Members $user.SamAccountName -Confirm:$false -ErrorAction Stop
+            Get-Log -LogFilePath $logFilePath -LogMessage "Successfully removed $($user.SamAccountName) from $groupName"
+        } else {
+            Get-Log -LogFilePath $logFilePath -LogMessage "User with email $email not found in Active Directory."
+        }
     } catch {
-        Get-Log -LogMessage "Failed to remove $samAccountName from $groupName. Error: $_" -LogFilePath $logFilePath
-        Write-Host "Failed to removed users"
+        Get-Log -LogFilePath $logFilePath -LogMessage "Failed to remove $($user.SamAccountName) from $groupName. Error: $_"
     }
 }
+
+# Signal when code is done running
+Write-Host "Script is done running. Check the log file for results"
 
 # Disconnect the session
 Remove-PSSession -Session $session
