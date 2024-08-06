@@ -5,6 +5,12 @@ Date: 7/30/24
 Description: Use below code to manage security group on active direocty
 #>
 
+# Install Active Directory module, if not already installed
+Install-Module ActiveDirectory # not needed if machine have RSAT installed
+
+# Import the Active Directory module
+Import-Module ActiveDirectory
+
 # Fucntion to log output
 function Get-Log {
     param (
@@ -21,12 +27,6 @@ function Get-Log {
 
 # Define the log file path
 $logFilePath = "enter log file path"
-
-# Install Active Directory module, if not already installed
-Install-Module ActiveDirectory # not needed if machine have RSAT installed
-
-# Import the Active Directory module
-Import-Module ActiveDirectory
 
 # Define the group name
 $groupName = "enter group name"
@@ -45,23 +45,25 @@ $session = New-PSSession -ComputerName $remoteComputer -Credential $credential #
 Invoke-Command -Session $session # not needed if running script from a computer on the domain
 
 # Get emails of the CSV file, use the email to retrieve the distinName from AD, and then add member to the sec group
+Write-Host "Script In-progress..."
 Import-Csv -Path $members | ForEach-Object {
     $email = $_.members
     try {
         $user = Get-ADUser -Filter "EmailAddress -eq '$email'"
         if ($user) {
-            Add-ADGroupMember -Identity $groupName -Members $user.DistinguishedName -ErrorAction Stop
-            Get-Log -LogFilePath $logFilePath -LogMessage "Successfully adeed $($user.DistinguishedName) to $groupName"
-            Write-Host "Successfuly added users. Check the log file"
+            Add-ADGroupMember -Identity $groupName -Members $user.SamAccountName -Confirm:$false -ErrorAction Stop
+            Get-Log -LogFilePath $logFilePath -LogMessage "Successfully adeed $($user.SamAccountName) to $groupName"
         } else {
             Get-Log -LogFilePath $logFilePath -LogMessage "User with email $email not found in Active Directory."
             Write-Host "Users were not found, check log file"
         }
     } catch {
-        Get-Log -LogFilePath $logFilePath -LogMessage "Failed to add $($user.DistinguishedName) to $groupName. Error: $_"
-        Write-Host "Failed to add users, check log file"
+        Get-Log -LogFilePath $logFilePath -LogMessage "Failed to add $($user.SamAccountName) to $groupName. Error: $_"
     }
 }
+
+# Signal when code is done running
+Write-Host "Script is done running. Check the log file for results"
 
 # Disconnect the session
 Remove-PSSession -Session $session
